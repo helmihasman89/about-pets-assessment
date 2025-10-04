@@ -1,112 +1,98 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AuthProvider, useAuth } from './src/auth/hooks/useAuth';
+import { LoginScreen } from './src/screens/auth/LoginScreen';
+import { RegisterScreen } from './src/screens/auth/RegisterScreen';
+import { MainScreen } from './src/screens/MainScreen';
+import { LoadingScreen } from './src/components/LoadingScreen';
 
-// Import Firebase services
-import { auth } from './src/services/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+// Stack navigator types
+export type RootStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  Main: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+/**
+ * AuthNavigator
+ * 
+ * Handles navigation routing based on authentication state.
+ * Shows loading screen during auth state initialization.
+ */
+const AuthNavigator: React.FC = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#f8f9fa' },
+        }}
+      >
+        {user ? (
+          // User is authenticated - show main app
+          <Stack.Screen
+            name="Main"
+            component={MainScreen}
+            options={{
+              gestureEnabled: false, // Disable swipe back
+            }}
+          />
+        ) : (
+          // User is not authenticated - show auth screens
+          <>
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{
+                title: 'Sign In',
+              }}
+            />
+            <Stack.Screen
+              name="Register"
+              component={RegisterScreen}
+              options={{
+                title: 'Create Account',
+                headerShown: true,
+                headerBackTitleVisible: false,
+                headerTintColor: '#007AFF',
+                headerStyle: {
+                  backgroundColor: '#f8f9fa',
+                },
+                headerTitleStyle: {
+                  fontSize: 18,
+                  fontWeight: '600',
+                },
+              }}
+            />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
 
 /**
  * Main App Component
  * 
- * Simplified version to test Firebase connection without navigation complexity.
- * Once this works, we'll add back the navigation and auth providers.
+ * Provides authentication context and navigation to the entire application.
+ * Handles session rehydration and routing based on auth state.
  */
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      // Listen for authentication state changes
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
-        setUser(user);
-        setLoading(false);
-      });
-
-      // Cleanup subscription on unmount
-      return unsubscribe;
-    } catch (error) {
-      console.error('Firebase Auth Error:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error');
-      setLoading(false);
-    }
-  }, []);
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.subtitle}>Initializing Firebase...</Text>
-        <StatusBar style="auto" />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Firebase Error</Text>
-        <Text style={styles.error}>{error}</Text>
-        <StatusBar style="auto" />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>About Pets Chat App</Text>
-      <Text style={styles.subtitle}>
-        {user ? `Welcome, ${user.email || 'User'}!` : 'Not logged in'}
-      </Text>
-      <Text style={styles.status}>
-        Firebase Auth Status: {user ? '✅ Connected' : '❌ Not authenticated'}
-      </Text>
-      <Text style={styles.info}>App is running successfully! 🎉</Text>
+    <AuthProvider>
+      <AuthNavigator />
       <StatusBar style="auto" />
-    </View>
+    </AuthProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  status: {
-    fontSize: 14,
-    color: '#333',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  info: {
-    fontSize: 16,
-    color: '#007AFF',
-    textAlign: 'center',
-    marginTop: 20,
-    fontWeight: '600',
-  },
-  error: {
-    fontSize: 14,
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-});

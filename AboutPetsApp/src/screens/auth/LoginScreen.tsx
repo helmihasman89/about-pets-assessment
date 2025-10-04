@@ -22,7 +22,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.appTitle}>ChatApp</Text>
+            <Text style={styles.appTitle}>About Pets</Text>
             <Text style={styles.subtitle}>Welcome back! Please sign in to your account.</Text>
           </View>
 

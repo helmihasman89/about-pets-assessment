@@ -23,8 +23,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
             <View style={styles.header}>
-              <Text style={styles.appTitle}>Join ChatApp</Text>
-              <Text style={styles.subtitle}>Create your account to start chatting with friends.</Text>
+              <Text style={styles.appTitle}>Join About Pets</Text>
+              <Text style={styles.subtitle}>Create your account to explore the world of pets.</Text>
             </View>
 
             <RegisterForm />
