@@ -1,165 +1,98 @@
-import { storage, userStorage, cacheStorage } from './mmkv';
-import type { User } from '../types/auth';
-import type { Message, Chat } from '../types/chat';
+import Storage from './asyncStorage';
 
 /**
  * Storage Service
  * 
- * Provides a unified interface for local storage operations.
- * Handles user data persistence, message caching, and app settings.
- * Uses MMKV for high-performance storage operations.
- * 
- * Features:
- * - User session persistence
- * - Message caching for offline access
- * - App settings storage
- * - Automatic JSON serialization/deserialization
+ * High-level storage operations for the chat app using AsyncStorage.
+ * Handles user preferences, message caching, and app settings.
  */
 
-class StorageService {
-  // User Management
-  setUser(user: User): void {
-    try {
-      userStorage.set('current_user', JSON.stringify(user));
-    } catch (error) {
-      console.error('Failed to save user:', error);
-    }
+// Storage keys
+const STORAGE_KEYS = {
+  USER_TOKEN: '@chat_app:user_token',
+  USER_DATA: '@chat_app:user_data',
+  CHAT_CACHE: '@chat_app:chat_cache',
+  APP_SETTINGS: '@chat_app:app_settings',
+  MESSAGES_CACHE: '@chat_app:messages_cache',
+} as const;
+
+export class StorageService {
+  /**
+   * User Authentication Storage
+   */
+  static async saveUserToken(token: string): Promise<void> {
+    await Storage.setItem(STORAGE_KEYS.USER_TOKEN, token);
   }
 
-  getUser(): User | null {
-    try {
-      const userData = userStorage.getString('current_user');
-      return userData ? JSON.parse(userData) : null;
-    } catch (error) {
-      console.error('Failed to get user:', error);
-      return null;
-    }
+  static async getUserToken(): Promise<string | null> {
+    return await Storage.getItem(STORAGE_KEYS.USER_TOKEN);
   }
 
-  clearUser(): void {
-    try {
-      userStorage.delete('current_user');
-    } catch (error) {
-      console.error('Failed to clear user:', error);
-    }
+  static async removeUserToken(): Promise<void> {
+    await Storage.removeItem(STORAGE_KEYS.USER_TOKEN);
   }
 
-  // Message Caching
-  cacheMessages(chatId: string, messages: Message[]): void {
-    try {
-      cacheStorage.set(`messages_${chatId}`, JSON.stringify(messages));
-    } catch (error) {
-      console.error('Failed to cache messages:', error);
-    }
+  /**
+   * User Data Storage
+   */
+  static async saveUserData(userData: any): Promise<void> {
+    await Storage.setObject(STORAGE_KEYS.USER_DATA, userData);
   }
 
-  getCachedMessages(chatId: string): Message[] {
-    try {
-      const messagesData = cacheStorage.getString(`messages_${chatId}`);
-      return messagesData ? JSON.parse(messagesData) : [];
-    } catch (error) {
-      console.error('Failed to get cached messages:', error);
-      return [];
-    }
+  static async getUserData<T>(): Promise<T | null> {
+    return await Storage.getObject<T>(STORAGE_KEYS.USER_DATA);
   }
 
-  clearCachedMessages(chatId: string): void {
-    try {
-      cacheStorage.delete(`messages_${chatId}`);
-    } catch (error) {
-      console.error('Failed to clear cached messages:', error);
-    }
+  static async removeUserData(): Promise<void> {
+    await Storage.removeItem(STORAGE_KEYS.USER_DATA);
   }
 
-  // Chat List Caching
-  cacheChats(chats: Chat[]): void {
-    try {
-      cacheStorage.set('cached_chats', JSON.stringify(chats));
-    } catch (error) {
-      console.error('Failed to cache chats:', error);
-    }
+  /**
+   * Chat Cache Storage
+   */
+  static async saveChatCache(chatId: string, messages: any[]): Promise<void> {
+    const cacheKey = `${STORAGE_KEYS.MESSAGES_CACHE}:${chatId}`;
+    await Storage.setObject(cacheKey, messages);
   }
 
-  getCachedChats(): Chat[] {
-    try {
-      const chatsData = cacheStorage.getString('cached_chats');
-      return chatsData ? JSON.parse(chatsData) : [];
-    } catch (error) {
-      console.error('Failed to get cached chats:', error);
-      return [];
-    }
+  static async getChatCache<T>(chatId: string): Promise<T[] | null> {
+    const cacheKey = `${STORAGE_KEYS.MESSAGES_CACHE}:${chatId}`;
+    return await Storage.getObject<T[]>(cacheKey);
   }
 
-  // App Settings
-  setSetting(key: string, value: any): void {
-    try {
-      storage.set(`setting_${key}`, JSON.stringify(value));
-    } catch (error) {
-      console.error(`Failed to save setting ${key}:`, error);
-    }
+  static async removeChatCache(chatId: string): Promise<void> {
+    const cacheKey = `${STORAGE_KEYS.MESSAGES_CACHE}:${chatId}`;
+    await Storage.removeItem(cacheKey);
   }
 
-  getSetting<T>(key: string, defaultValue: T): T {
-    try {
-      const settingData = storage.getString(`setting_${key}`);
-      return settingData ? JSON.parse(settingData) : defaultValue;
-    } catch (error) {
-      console.error(`Failed to get setting ${key}:`, error);
-      return defaultValue;
-    }
+  /**
+   * App Settings Storage
+   */
+  static async saveAppSettings(settings: any): Promise<void> {
+    await Storage.setObject(STORAGE_KEYS.APP_SETTINGS, settings);
   }
 
-  // Last Message Timestamp (for sync optimization)
-  setLastSyncTimestamp(chatId: string, timestamp: Date): void {
-    try {
-      storage.set(`last_sync_${chatId}`, timestamp.toISOString());
-    } catch (error) {
-      console.error('Failed to save sync timestamp:', error);
-    }
+  static async getAppSettings<T>(): Promise<T | null> {
+    return await Storage.getObject<T>(STORAGE_KEYS.APP_SETTINGS);
   }
 
-  getLastSyncTimestamp(chatId: string): Date | null {
-    try {
-      const timestampString = storage.getString(`last_sync_${chatId}`);
-      return timestampString ? new Date(timestampString) : null;
-    } catch (error) {
-      console.error('Failed to get sync timestamp:', error);
-      return null;
-    }
+  /**
+   * Clear all app data
+   */
+  static async clearAllData(): Promise<void> {
+    await Storage.clear();
   }
 
-  // Utility Methods
-  clearAllCache(): void {
-    try {
-      cacheStorage.clearAll();
-    } catch (error) {
-      console.error('Failed to clear cache:', error);
-    }
-  }
-
-  clearAllData(): void {
-    try {
-      storage.clearAll();
-      userStorage.clearAll();
-      cacheStorage.clearAll();
-    } catch (error) {
-      console.error('Failed to clear all data:', error);
-    }
-  }
-
-  // Get storage size (for debugging/monitoring)
-  getStorageInfo(): { general: number; user: number; cache: number } {
-    try {
-      return {
-        general: storage.size,
-        user: userStorage.size,
-        cache: cacheStorage.size,
-      };
-    } catch (error) {
-      console.error('Failed to get storage info:', error);
-      return { general: 0, user: 0, cache: 0 };
-    }
+  /**
+   * Clear user-specific data (for logout)
+   */
+  static async clearUserData(): Promise<void> {
+    await Promise.all([
+      Storage.removeItem(STORAGE_KEYS.USER_TOKEN),
+      Storage.removeItem(STORAGE_KEYS.USER_DATA),
+      // Keep app settings but clear user-specific data
+    ]);
   }
 }
 
-export const storageService = new StorageService();
+export default StorageService;
