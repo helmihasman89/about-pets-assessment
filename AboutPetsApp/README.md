@@ -1,50 +1,212 @@
-# Welcome to your Expo app 👋
+# Real-Time Chat App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native chat application built with Expo and TypeScript, featuring real-time messaging, user authentication, and local storage.
 
-## Get started
+## 🚀 Features
 
-1. Install dependencies
+- **Real-time messaging** with Firebase Firestore
+- **User authentication** with Firebase Auth
+- **Local storage** with MMKV for offline support
+- **Modern UI** with reusable components
+- **TypeScript** for type safety
+- **Cross-platform** support (iOS, Android, Web)
 
+## 📁 Project Structure
+
+```
+src/
+├── auth/                   # Authentication module
+│   ├── components/         # Login, Register forms
+│   └── hooks/             # useAuth hook
+├── chat/                   # Chat module
+│   ├── components/         # ChatList, ChatRoom, MessageBubble
+│   └── hooks/             # useChatList, useMessages, useSendMessage
+├── components/             # Reusable UI components
+│   └── ui/                # Button, Input, Avatar, etc.
+├── services/               # External services
+│   ├── firebase.ts        # Firebase configuration
+│   └── chatService.ts     # Chat operations
+├── storage/                # Local storage
+│   ├── mmkv.ts           # MMKV configuration
+│   └── storageService.ts  # Storage operations
+├── types/                  # TypeScript definitions
+├── utils/                  # Helper functions
+├── navigation/             # Navigation configuration
+└── screens/               # Screen components
+```
+
+## 🛠 Setup Instructions
+
+### Prerequisites
+
+- Node.js (16+)
+- npm or yarn
+- Expo CLI
+- Firebase project
+
+### Installation
+
+1. **Clone and install dependencies:**
    ```bash
+   cd AboutPetsApp
    npm install
    ```
 
-2. Start the app
+2. **Configure Firebase:**
+   - Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+   - Enable Authentication (Email/Password)
+   - Enable Firestore Database
+   - Copy your Firebase config to `src/services/firebase.ts`
 
+3. **Install additional dependencies:**
    ```bash
-   npx expo start
+   # Core navigation and UI
+   npm install @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs
+   npm install react-native-screens react-native-safe-area-context
+   
+   # Firebase
+   npm install firebase
+   
+   # Storage
+   npm install react-native-mmkv
+   
+   # AsyncStorage for auth persistence
+   npm install @react-native-async-storage/async-storage
    ```
 
-In the output, you'll find options to open the app in a
+4. **Start the development server:**
+   ```bash
+   npm start
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 📱 Key Components
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Authentication
+- `LoginForm` - User login with email/password
+- `RegisterForm` - User registration
+- `useAuth` - Authentication state management
 
-## Get a fresh project
+### Chat
+- `ChatList` - List of user's conversations
+- `ChatRoom` - Individual chat interface
+- `MessageBubble` - Individual message display
 
-When you're ready, run:
+### Storage
+- `storageService` - Unified storage interface
+- `mmkv` - High-performance local storage
 
-```bash
-npm run reset-project
+### UI Components
+- `Button` - Reusable button with variants
+- `Input` - Form input with validation
+- `Avatar` - User profile pictures
+- `LoadingSpinner` - Loading indicators
+
+## 🔥 Firebase Setup
+
+### Firestore Collections Structure
+
+```
+chats/
+├── {chatId}/
+│   ├── name: string
+│   ├── participantIds: string[]
+│   ├── createdAt: timestamp
+│   ├── lastMessage: object
+│   └── messages/
+│       └── {messageId}/
+│           ├── text: string
+│           ├── senderId: string
+│           ├── timestamp: timestamp
+│           └── senderName: string
+
+users/ (optional)
+└── {userId}/
+    ├── displayName: string
+    ├── email: string
+    └── photoURL: string
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Security Rules (Firestore)
 
-## Learn more
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Chat access for participants only
+    match /chats/{chatId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid in resource.data.participantIds;
+      
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+      }
+    }
+  }
+}
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🚦 Running the App
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+# Start Metro bundler
+npm start
 
-## Join the community
+# Run on iOS simulator
+npm run ios
 
-Join our community of developers creating universal apps.
+# Run on Android emulator
+npm run android
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Run on web
+npm run web
+```
+
+## 📦 Build for Production
+
+```bash
+# Create production build
+expo build:android
+expo build:ios
+
+# Or use EAS Build (recommended)
+eas build --platform android
+eas build --platform ios
+```
+
+## 🧪 Testing
+
+```bash
+# Run tests
+npm test
+
+# Run linting
+npm run lint
+```
+
+## 📚 Tech Stack
+
+- **React Native** - Cross-platform mobile development
+- **Expo** - Development platform and tools
+- **TypeScript** - Type safety and better DX
+- **Firebase** - Backend services (Auth, Firestore)
+- **React Navigation** - Navigation library
+- **MMKV** - High-performance local storage
+- **Expo Vector Icons** - Icon library
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/new-feature`
+3. Commit changes: `git commit -am 'Add new feature'`
+4. Push to branch: `git push origin feature/new-feature`
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
