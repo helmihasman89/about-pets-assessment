@@ -55,11 +55,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   // Load cached messages on mount
   useEffect(() => {
-    const cachedMessages = MessageCacheService.loadMessages(chatId);
-    if (cachedMessages.length > 0) {
-      setMessages(cachedMessages);
-      setLoading(false);
-    }
+    const loadCachedMessages = async () => {
+      try {
+        const cachedMessages = await MessageCacheService.loadMessages(chatId);
+        if (cachedMessages.length > 0) {
+          setMessages(cachedMessages);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error loading cached messages:', error);
+      }
+    };
+
+    loadCachedMessages();
   }, [chatId]);
 
   // Subscribe to real-time messages
@@ -71,8 +79,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         setLoading(false);
         setError(null);
         
-        // Save to cache
-        MessageCacheService.saveMessages(chatId, newMessages);
+        // Save to cache (async, but don't await to avoid blocking UI)
+        MessageCacheService.saveMessages(chatId, newMessages).catch(error => {
+          console.error('Error saving messages to cache:', error);
+        });
       },
       (err: Error) => {
         console.error('Real-time listener error:', err);

@@ -1,3 +1,3 @@
 // Storage module exports
-export { default as Storage } from './asyncStorage';
+export { storage, userStorage, cacheStorage } from './asyncStorage';
 export { default as StorageService } from './storageService';

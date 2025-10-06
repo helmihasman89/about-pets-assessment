@@ -1,13 +1,16 @@
-# Real-Time Chat App
+# About Pets - Real-Time Chat App
 
-A React Native chat application built with Expo and TypeScript, featuring real-time messaging, user authentication, and local storage.
+A React Native chat application built with Expo and TypeScript, featuring real-time messaging as the primary interface. Perfect for pet lovers to connect and share their furry friends' adventures!
 
 ## 🚀 Features
 
-- **Real-time messaging** with Firebase Firestore
-- **User authentication** with Firebase Auth
-- **Local storage** with MMKV for offline support
-- **Modern UI** with reusable components
+- **Chat-First Interface** - Chat screen is the main application interface
+- **Real-time messaging** with Firebase Firestore and optimistic updates
+- **User authentication** with Firebase Auth (email/password)
+- **Offline support** with AsyncStorage local caching (last 50 messages per chat)
+- **Performance optimized** FlatList with inverted scrolling
+- **Message status indicators** (sending, sent, failed)
+- **Modern chat UI** with message bubbles and timestamps
 - **TypeScript** for type safety
 - **Cross-platform** support (iOS, Android, Web)
 
@@ -18,7 +21,7 @@ src/
 ├── auth/                   # Authentication module
 │   ├── components/         # Login, Register forms
 │   └── hooks/             # useAuth hook
-├── chat/                   # Chat module
+├── chat/                   # Chat module (PRIMARY INTERFACE)
 │   ├── components/         # ChatList, ChatRoom, MessageBubble
 │   └── hooks/             # useChatList, useMessages, useSendMessage
 ├── components/             # Reusable UI components
@@ -27,7 +30,7 @@ src/
 │   ├── firebase.ts        # Firebase configuration
 │   └── chatService.ts     # Chat operations
 ├── storage/                # Local storage
-│   ├── mmkv.ts           # MMKV configuration
+│   ├── asyncStorage.ts    # AsyncStorage configuration
 │   └── storageService.ts  # Storage operations
 ├── types/                  # TypeScript definitions
 ├── utils/                  # Helper functions
@@ -67,8 +70,7 @@ src/
    # Firebase
    npm install firebase
    
-   # Storage
-   npm install react-native-mmkv
+   # Storage (AsyncStorage is already included with React Native/Expo)
    
    # AsyncStorage for auth persistence
    npm install @react-native-async-storage/async-storage
@@ -93,7 +95,7 @@ src/
 
 ### Storage
 - `storageService` - Unified storage interface
-- `mmkv` - High-performance local storage
+- `asyncStorage` - Cross-platform local storage
 
 ### UI Components
 - `Button` - Reusable button with variants
@@ -196,7 +198,7 @@ npm run lint
 - **TypeScript** - Type safety and better DX
 - **Firebase** - Backend services (Auth, Firestore)
 - **React Navigation** - Navigation library
-- **MMKV** - High-performance local storage
+- **AsyncStorage** - Cross-platform local storage
 - **Expo Vector Icons** - Icon library
 
 ## 🤝 Contributing

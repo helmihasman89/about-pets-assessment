@@ -24,11 +24,11 @@ export type MainTabParamList = {
 
 export type ChatStackParamList = {
   ChatList: undefined;
-  ChatRoom: {
+  Chat: {
     chatId: string;
     chatName?: string;
   };
-  NewChat: undefined;
+  UserDiscovery: undefined;
   ChatSettings: {
     chatId: string;
   };

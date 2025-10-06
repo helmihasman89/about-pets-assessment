@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useAuth } from '../../auth/hooks/useAuth';
 import ChatScreen from './ChatScreen';
 import ChatScreenSimple from './ChatScreenSimple';
 
@@ -32,11 +32,7 @@ const mockChats = [
   },
 ];
 
-// Mock user data - replace with actual auth
-const mockUser = {
-  id: 'user-123',
-  name: 'John Doe',
-};
+// Remove mock user data - will use actual auth
 
 interface Chat {
   id: string;
@@ -83,49 +79,67 @@ const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) => {
 
 // Wrapper component to pass user context to ChatScreen
 const ChatScreenWrapper: React.FC<{ route: any }> = ({ route }) => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text>Please sign in to access chat</Text>
+      </View>
+    );
+  }
+
   return (
     <ChatScreen
-      currentUserId={mockUser.id}
-      currentUserName={mockUser.name}
+      currentUserId={user.uid}
+      currentUserName={user.displayName}
     />
   );
 };
 
 const ChatScreenSimpleWrapper: React.FC<{ route: any }> = ({ route }) => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text>Please sign in to access chat</Text>
+      </View>
+    );
+  }
+
   return (
     <ChatScreenSimple
-      currentUserId={mockUser.id}
-      currentUserName={mockUser.name}
+      currentUserId={user.uid}
+      currentUserName={user.displayName}
     />
   );
 };
 
-// Main App Navigation
-const ChatExampleApp: React.FC = () => {
+// Main Chat Navigation (for use within existing navigation structure)
+const ChatNavigator: React.FC = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="ChatList">
-        <Stack.Screen 
-          name="ChatList" 
-          component={ChatListScreen}
-          options={{ title: 'About Pets Chat' }}
-        />
-        <Stack.Screen 
-          name="Chat" 
-          component={ChatScreenWrapper}
-          options={({ route }) => ({ 
-            title: (route.params as any)?.chatName || 'Chat' 
-          })}
-        />
-        <Stack.Screen 
-          name="ChatSimple" 
-          component={ChatScreenSimpleWrapper}
-          options={({ route }) => ({ 
-            title: `${(route.params as any)?.chatName || 'Chat'} (Simple)` 
-          })}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator initialRouteName="ChatList">
+      <Stack.Screen 
+        name="ChatList" 
+        component={ChatListScreen}
+        options={{ title: 'About Pets Chat' }}
+      />
+      <Stack.Screen 
+        name="Chat" 
+        component={ChatScreenWrapper}
+        options={({ route }) => ({ 
+          title: (route.params as any)?.chatName || 'Chat' 
+        })}
+      />
+      <Stack.Screen 
+        name="ChatSimple" 
+        component={ChatScreenSimpleWrapper}
+        options={({ route }) => ({ 
+          title: `${(route.params as any)?.chatName || 'Chat'} (Simple)` 
+        })}
+      />
+    </Stack.Navigator>
   );
 };
 
@@ -167,18 +181,15 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChatExampleApp;
+export default ChatNavigator;
 
-// Alternative usage with hooks
-export const useExampleChat = () => {
+// Export individual components for flexible usage
+export { ChatScreenWrapper, ChatScreenSimpleWrapper, ChatListScreen };
+
+// Alternative usage hook with actual auth
+export const useChatWithAuth = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [currentUser] = useState(mockUser);
-
-  // Initialize Firebase Auth (replace with your auth logic)
-  useEffect(() => {
-    // Your auth initialization here
-    console.log('Initialize auth...');
-  }, []);
+  const { user } = useAuth();
 
   const startChat = (chatId: string) => {
     setSelectedChatId(chatId);
@@ -186,8 +197,9 @@ export const useExampleChat = () => {
 
   return {
     selectedChatId,
-    currentUser,
+    currentUser: user,
     chats: mockChats,
     startChat,
+    isAuthenticated: !!user,
   };
 };

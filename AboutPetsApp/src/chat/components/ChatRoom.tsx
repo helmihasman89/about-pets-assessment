@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
 import { useMessages } from '../hooks/useMessages';
 import { useSendMessage } from '../hooks/useSendMessage';
 import type { Message } from '../../types/chat';
@@ -90,11 +89,11 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, loading }) =
  * Handles real-time message updates and auto-scrolling.
  * Integrates with useMessages and useSendMessage hooks.
  */
-type ChatRoomRouteProp = RouteProp<{ ChatRoom: { chatId: string } }, 'ChatRoom'>;
+interface ChatRoomProps {
+  chatId: string;
+}
 
-export const ChatRoom: React.FC = () => {
-  const route = useRoute<ChatRoomRouteProp>();
-  const { chatId } = route.params;
+export const ChatRoom: React.FC<ChatRoomProps> = ({ chatId }) => {
   const flatListRef = useRef<FlatList>(null);
   
   const { messages, loading, currentUserId } = useMessages(chatId);

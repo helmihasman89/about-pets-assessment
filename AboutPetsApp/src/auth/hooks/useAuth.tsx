@@ -1,4 +1,4 @@
-import React, { useContext, createContext, useEffect, useState } from 'react';
+import React, { useContext, createContext, useEffect, useState, useMemo } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { SecureStorageService } from '../../services/secureStorage';
+import { UserService } from '../../services/userService';
 import type { User } from '../../types/auth';
 
 /**
@@ -123,31 +124,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       console.log('Sign in successful for:', email);
       
       // The onAuthStateChanged listener will handle setting user state and storing tokens
     } catch (error: any) {
       console.error('Sign in error:', error);
       
-      let errorMessage = 'Sign in failed';
-      switch (error.code) {
-        case 'auth/user-not-found':
-          errorMessage = 'No account found with this email address';
-          break;
-        case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = 'Too many failed attempts. Please try again later';
-          break;
-        default:
-          errorMessage = error.message || 'An error occurred during sign in';
-      }
+      const getErrorMessage = () => {
+        switch (error.code) {
+          case 'auth/user-not-found':
+            return 'No account found with this email address';
+          case 'auth/wrong-password':
+            return 'Incorrect password';
+          case 'auth/invalid-email':
+            return 'Invalid email address';
+          case 'auth/too-many-requests':
+            return 'Too many failed attempts. Please try again later';
+          default:
+            return error.message || 'An error occurred during sign in';
+        }
+      };
       
+      const errorMessage = getErrorMessage();
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -166,6 +165,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await updateProfile(userCredential.user, { 
         displayName: displayName.trim() 
       });
+
+      // Create user profile in Firestore
+      const userData: User = {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email!,
+        displayName: displayName.trim(),
+        photoURL: null,
+      };
+      
+      try {
+        await UserService.createOrUpdateProfile(userData);
+      } catch (profileError) {
+        console.warn('Failed to create user profile, will retry on next auth state change:', profileError);
+      }
       
       console.log('Sign up successful for:', email);
       
@@ -173,21 +186,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Sign up error:', error);
       
-      let errorMessage = 'Account creation failed';
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = 'An account with this email already exists';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'auth/weak-password':
-          errorMessage = 'Password should be at least 6 characters';
-          break;
-        default:
-          errorMessage = error.message || 'An error occurred during account creation';
-      }
+      const getErrorMessage = () => {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            return 'An account with this email already exists';
+          case 'auth/invalid-email':
+            return 'Invalid email address';
+          case 'auth/weak-password':
+            return 'Password should be at least 6 characters';
+          default:
+            return error.message || 'An error occurred during account creation';
+        }
+      };
       
+      const errorMessage = getErrorMessage();
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -217,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
   };
 
-  const value: AuthContextType = {
+  const value: AuthContextType = useMemo(() => ({
     user,
     loading,
     initializing,
@@ -226,7 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signOut: handleSignOut,
     clearError,
-  };
+  }), [user, loading, initializing, error]);
 
   return (
     <AuthContext.Provider value={value}>

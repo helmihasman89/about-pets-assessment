@@ -1,103 +1,101 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
- * AsyncStorage Configuration for Expo
+ * AsyncStorage Configuration
  * 
- * Provides a simple key-value storage solution that works
- * seamlessly with Expo without requiring TurboModules.
- * 
- * AsyncStorage is:
- * - Asynchronous and persistent
- * - Cross-platform (iOS/Android)
- * - Fully compatible with Expo
+ * Configures AsyncStorage for cross-platform local storage.
+ * Used for caching user data, chat messages, and app settings.
+ * Compatible with all React Native and Expo configurations.
  */
 
-export class Storage {
-  /**
-   * Store a value
-   */
-  static async setItem(key: string, value: string): Promise<void> {
+// Storage keys for different data types
+const STORAGE_KEYS = {
+  CHAT_APP: 'chat-app-storage',
+  USER_SESSION: 'user-session-storage',
+  CACHE: 'cache-storage',
+} as const;
+
+// AsyncStorage wrapper with MMKV-like interface
+class AsyncStorageWrapper {
+  private readonly prefix: string;
+
+  constructor(prefix: string) {
+    this.prefix = prefix;
+  }
+
+  private getKey(key: string): string {
+    return `${this.prefix}:${key}`;
+  }
+
+  set(key: string, value: string): void {
+    AsyncStorage.setItem(this.getKey(key), value).catch(error => {
+      console.error(`AsyncStorage set error for key ${key}:`, error);
+    });
+  }
+
+  getString(key: string): string | undefined {
     try {
-      await AsyncStorage.setItem(key, value);
+      // Note: AsyncStorage is async, but we're providing a sync interface
+      // For better compatibility, consider using async methods in your components
+      return undefined; // Placeholder - use getStringAsync instead
     } catch (error) {
-      console.error('Error storing data:', error);
-      throw error;
+      console.error(`AsyncStorage get error for key ${key}:`, error);
+      return undefined;
     }
   }
 
-  /**
-   * Get a value
-   */
-  static async getItem(key: string): Promise<string | null> {
+  async getStringAsync(key: string): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(key);
+      return await AsyncStorage.getItem(this.getKey(key));
     } catch (error) {
-      console.error('Error retrieving data:', error);
-      throw error;
+      console.error(`AsyncStorage get error for key ${key}:`, error);
+      return null;
     }
   }
 
-  /**
-   * Store an object (automatically stringifies)
-   */
-  static async setObject(key: string, value: any): Promise<void> {
+  async setAsync(key: string, value: string): Promise<void> {
     try {
-      const jsonValue = JSON.stringify(value);
-      await AsyncStorage.setItem(key, jsonValue);
+      await AsyncStorage.setItem(this.getKey(key), value);
     } catch (error) {
-      console.error('Error storing object:', error);
-      throw error;
+      console.error(`AsyncStorage set error for key ${key}:`, error);
     }
   }
 
-  /**
-   * Get an object (automatically parses)
-   */
-  static async getObject<T>(key: string): Promise<T | null> {
+  delete(key: string): void {
+    AsyncStorage.removeItem(this.getKey(key)).catch(error => {
+      console.error(`AsyncStorage delete error for key ${key}:`, error);
+    });
+  }
+
+  async deleteAsync(key: string): Promise<void> {
     try {
-      const jsonValue = await AsyncStorage.getItem(key);
-      return jsonValue != null ? JSON.parse(jsonValue) : null;
+      await AsyncStorage.removeItem(this.getKey(key));
     } catch (error) {
-      console.error('Error retrieving object:', error);
-      throw error;
+      console.error(`AsyncStorage delete error for key ${key}:`, error);
     }
   }
 
-  /**
-   * Remove a value
-   */
-  static async removeItem(key: string): Promise<void> {
-    try {
-      await AsyncStorage.removeItem(key);
-    } catch (error) {
-      console.error('Error removing data:', error);
-      throw error;
-    }
+  getAllKeys(): string[] {
+    // Return empty array for sync version, use getAllKeysAsync instead
+    return [];
   }
 
-  /**
-   * Clear all stored data
-   */
-  static async clear(): Promise<void> {
+  async getAllKeysAsync(): Promise<string[]> {
     try {
-      await AsyncStorage.clear();
+      const allKeys = await AsyncStorage.getAllKeys();
+      return allKeys.filter(key => key.startsWith(`${this.prefix}:`));
     } catch (error) {
-      console.error('Error clearing storage:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all keys
-   */
-  static async getAllKeys(): Promise<readonly string[]> {
-    try {
-      return await AsyncStorage.getAllKeys();
-    } catch (error) {
-      console.error('Error getting all keys:', error);
-      throw error;
+      console.error('AsyncStorage getAllKeys error:', error);
+      return [];
     }
   }
 }
 
-export default Storage;
+// Main storage instance for general app data
+export const storage = new AsyncStorageWrapper(STORAGE_KEYS.CHAT_APP);
+
+// Separate instance for user session data
+export const userStorage = new AsyncStorageWrapper(STORAGE_KEYS.USER_SESSION);
+
+// Cache storage for temporary data (messages, images, etc.)
+export const cacheStorage = new AsyncStorageWrapper(STORAGE_KEYS.CACHE);

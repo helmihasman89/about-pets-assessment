@@ -1,8 +1,8 @@
-import { cacheStorage } from '../storage/mmkv';
+import { cacheStorage } from '../storage/asyncStorage';
 import { Message } from '../types/chat';
 
 /**
- * Local storage service for caching chat messages using MMKV
+ * Local storage service for caching chat messages using AsyncStorage
  * Stores the last 50 messages per chat for offline viewing
  */
 
@@ -15,7 +15,7 @@ export class MessageCacheService {
    * Save messages to local cache
    * Keeps only the most recent 50 messages
    */
-  static saveMessages(chatId: string, messages: Message[]): void {
+  static async saveMessages(chatId: string, messages: Message[]): Promise<void> {
     try {
       // Sort messages by timestamp (newest first) and take only the last 50
       const sortedMessages = [...messages]
@@ -29,7 +29,7 @@ export class MessageCacheService {
       }));
 
       const cacheKey = this.getCacheKey(chatId);
-      cacheStorage.set(cacheKey, JSON.stringify(messagesToStore));
+      await cacheStorage.setAsync(cacheKey, JSON.stringify(messagesToStore));
     } catch (error) {
       console.error('Error saving messages to cache:', error);
     }
@@ -38,10 +38,10 @@ export class MessageCacheService {
   /**
    * Load messages from local cache
    */
-  static loadMessages(chatId: string): Message[] {
+  static async loadMessages(chatId: string): Promise<Message[]> {
     try {
       const cacheKey = this.getCacheKey(chatId);
-      const cachedData = cacheStorage.getString(cacheKey);
+      const cachedData = await cacheStorage.getStringAsync(cacheKey);
 
       if (!cachedData) {
         return [];
@@ -63,10 +63,10 @@ export class MessageCacheService {
   /**
    * Clear cached messages for a specific chat
    */
-  static clearMessages(chatId: string): void {
+  static async clearMessages(chatId: string): Promise<void> {
     try {
       const cacheKey = this.getCacheKey(chatId);
-      cacheStorage.delete(cacheKey);
+      await cacheStorage.deleteAsync(cacheKey);
     } catch (error) {
       console.error('Error clearing messages cache:', error);
     }
@@ -75,14 +75,18 @@ export class MessageCacheService {
   /**
    * Clear all cached messages
    */
-  static clearAllMessages(): void {
+  static async clearAllMessages(): Promise<void> {
     try {
-      const keys = cacheStorage.getAllKeys();
-      const messageKeys = keys.filter(key => key.startsWith('messages_'));
+      const keys = await cacheStorage.getAllKeysAsync();
+      const messageKeys = keys.filter(key => key.includes('messages_'));
       
-      messageKeys.forEach(key => {
-        cacheStorage.delete(key);
-      });
+      await Promise.all(
+        messageKeys.map(key => {
+          // Extract the actual key by removing the prefix
+          const actualKey = key.replace(/^[^:]+:/, '');
+          return cacheStorage.deleteAsync(actualKey);
+        })
+      );
     } catch (error) {
       console.error('Error clearing all messages cache:', error);
     }

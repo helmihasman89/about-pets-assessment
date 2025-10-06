@@ -6,7 +6,7 @@ A real-time chat screen component for React Native Expo apps using Firebase Fire
 
 - ✅ Real-time message updates using Firestore listeners
 - ✅ Optimistic updates for better UX (messages appear immediately)
-- ✅ Offline support with MMKV local caching (last 50 messages)
+- ✅ Offline support with AsyncStorage local caching (last 50 messages per chat)
 - ✅ Performance optimized FlatList with `inverted` prop
 - ✅ Message status indicators (sending, sent, failed)
 - ✅ Modern chat bubble design with timestamps
@@ -33,7 +33,7 @@ Handles Firestore operations:
 - `updateMessageStatus()` - Update message status
 
 ### 2. MessageCacheService (`src/services/messageCacheService.ts`)
-Handles local MMKV storage:
+Handles local AsyncStorage:
 - `saveMessages()` - Cache messages locally
 - `loadMessages()` - Load cached messages
 - `clearMessages()` - Clear chat cache
@@ -157,7 +157,7 @@ chats/{chatId}/messages/{messageId}
    - `React.memo` for MessageBubble component
 
 3. **Local Caching**:
-   - MMKV for fast local storage
+   - AsyncStorage for cross-platform local storage
    - Automatic cache management (max 50 messages)
    - Instant loading from cache on app start
 
@@ -166,14 +166,14 @@ chats/{chatId}/messages/{messageId}
 Make sure you have the required dependencies:
 
 ```bash
-npm install react-native-mmkv firebase @react-navigation/native
+npm install firebase @react-navigation/native @react-native-async-storage/async-storage
 ```
 
 ## Configuration
 
 1. **Firebase Setup**: Configure your Firebase project and update `src/services/firebase.ts`
 
-2. **MMKV Setup**: The MMKV storage is configured in `src/storage/mmkv.ts`
+2. **AsyncStorage Setup**: The AsyncStorage is configured in `src/storage/asyncStorage.ts`
 
 3. **Types**: Message and chat types are defined in `src/types/chat.ts`
 
@@ -181,7 +181,7 @@ npm install react-native-mmkv firebase @react-navigation/native
 
 - Network connection errors are handled gracefully
 - Failed messages can be retried (UI hook available)
-- Offline mode supported through MMKV caching
+- Offline mode supported through AsyncStorage caching
 - User-friendly error messages and retry options
 
 ## Future Enhancements
@@ -195,7 +195,7 @@ npm install react-native-mmkv firebase @react-navigation/native
 
 ## Dependencies
 
-- `react-native-mmkv` - Fast local storage
+- `@react-native-async-storage/async-storage` - Cross-platform local storage
 - `firebase` - Backend services
 - `@react-navigation/native` - Navigation
 - `react-native-safe-area-context` - Safe area handling
