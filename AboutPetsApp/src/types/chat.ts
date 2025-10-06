@@ -13,6 +13,7 @@ export interface Message {
   timestamp: Date;
   chatId: string;
   type?: 'text' | 'image' | 'file';
+  status?: 'sending' | 'sent' | 'failed';
   metadata?: {
     fileName?: string;
     fileSize?: number;
